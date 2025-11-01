@@ -37,6 +37,7 @@
     "wrangler": "^4.42.2"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.26",
     "@ai-sdk/openai": "^2.0.48",
     "@ai-sdk/react": "^2.0.68",
     "@ai-sdk/ui-utils": "^1.2.11",

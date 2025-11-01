@@ -13,12 +13,12 @@ import {
   createUIMessageStreamResponse,
   type ToolSet
 } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { google } from "@ai-sdk/google";
 import { processToolCalls, cleanupMessages } from "./utils";
 import { tools, executions } from "./tools";
 // import { env } from "cloudflare:workers";
 
-const model = openai("gpt-4o-2024-11-20");
+const model = google("gemini-2.0-flash-exp");
 // Cloudflare AI Gateway
 // const openai = createOpenAI({
 //   apiKey: env.OPENAI_API_KEY,
@@ -113,16 +113,16 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/check-open-ai-key") {
-      const hasOpenAIKey = !!process.env.OPENAI_API_KEY;
-      return Response.json({
-        success: hasOpenAIKey
-      });
-    }
-    if (!process.env.OPENAI_API_KEY) {
-      console.error(
-        "OPENAI_API_KEY is not set, don't forget to set it locally in .dev.vars, and use `wrangler secret bulk .dev.vars` to upload it to production"
-      );
-    }
+    const hasGeminiKey = !!process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    return Response.json({
+      success: hasGeminiKey
+    });
+  }
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    console.error(
+      "GOOGLE_GENERATIVE_AI_API_KEY is not set, don't forget to set it locally in .dev.vars"
+    );
+  }
     return (
       // Route the request to our agent or return 404 if not found
       (await routeAgentRequest(request, env)) ||
