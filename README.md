@@ -1,238 +1,254 @@
-# 🤖 Chat Agent Starter Kit
+# EdgeLint AI 🔶
 
-![npm i agents command](./npm-agents-banner.svg)
+> AI-powered code review assistant for Cloudflare Workers
 
-<a href="https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/agents-starter"><img src="https://deploy.workers.cloudflare.com/button" alt="Deploy to Cloudflare"/></a>
+EdgeLint AI is an intelligent code review tool that helps developers write better, faster, and edge-optimized Cloudflare Workers code. Built with the Cloudflare Agents SDK and powered by Workers AI (Llama 3.3).
 
-A starter template for building AI-powered chat agents using Cloudflare's Agent platform, powered by [`agents`](https://www.npmjs.com/package/agents). This project provides a foundation for creating interactive chat experiences with AI, complete with a modern UI and tool integration capabilities.
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?logo=cloudflare)](https://workers.cloudflare.com/)
+[![Workers AI](https://img.shields.io/badge/Workers-AI-F38020)](https://ai.cloudflare.com/)
+[![Agents SDK](https://img.shields.io/badge/Agents-SDK-F38020)](https://developers.cloudflare.com/agents/)
 
-## Features
+## 🌟 Features
 
-- 💬 Interactive chat interface with AI
-- 🛠️ Built-in tool system with human-in-the-loop confirmation
-- 📅 Advanced task scheduling (one-time, delayed, and recurring via cron)
-- 🌓 Dark/Light theme support
-- ⚡️ Real-time streaming responses
-- 🔄 State management and chat history
-- 🎨 Modern, responsive UI
+### Intelligent Code Analysis
+- **Node.js Compatibility Checks** - Detects incompatible Node.js APIs (fs, path, process, etc.)
+- **Performance Analysis** - Identifies blocking operations and synchronous code
+- **Edge-Specific Patterns** - Catches setTimeout, global state, and other anti-patterns
+- **Best Practices** - Suggests error handling, proper exports, and env parameter usage
 
-## Prerequisites
+### Real-Time Assistance
+- **Interactive Chat Interface** - Natural conversation about your code
+- **Instant Feedback** - Get analysis results in seconds
+- **Corrected Code Examples** - See working, edge-optimized alternatives
+- **Educational Explanations** - Learn WHY something doesn't work
 
-- Cloudflare account
-- OpenAI API key
+### Built on Cloudflare Platform
+- **Workers AI (Llama 3.3)** - No external API dependencies
+- **Agents SDK** - Durable state and real-time communication
+- **Serverless** - Scales globally on Cloudflare's edge network
 
-## Quick Start
+## 🚀 Demo
 
-1. Create a new project:
+### Live Demo
+👉 **[Try EdgeLint AI](https://your-deployment-url.workers.dev)** *(Add your deployed URL here)*
 
-```bash
-npx create-cloudflare@latest --template cloudflare/agents-starter
+### Example Usage
+
+**Input:**
+```javascript
+import fs from 'fs';
+
+export default {
+  async fetch(request) {
+    const data = fs.readFileSync('./config.json');
+    return new Response(data);
+  }
+}
 ```
 
-2. Install dependencies:
+**EdgeLint Response:**
+```
+🔴 CRITICAL ISSUES (2):
 
-```bash
-npm install
+1. Node.js 'fs' module not available
+   Workers run in V8 isolates without Node.js APIs. 
+   Replace 'fs' with Workers-compatible alternatives.
+
+2. Synchronous operation: readFileSync()
+   Blocking operations hurt edge performance. 
+   Use KV.get() or R2 fetch with await
+
+✅ CORRECTED VERSION:
+
+export default {
+  async fetch(request, env, ctx) {
+    try {
+      const data = await env.MY_KV.get('config.json', 'text');
+      if (!data) {
+        return new Response('Not found', { status: 404 });
+      }
+      return new Response(data);
+    } catch (error) {
+      return new Response('Error', { status: 500 });
+    }
+  }
+}
 ```
 
-3. Set up your environment:
+## 📦 Installation & Setup
 
-Create a `.dev.vars` file:
+### Prerequisites
+- Node.js 18+
+- npm or pnpm
+- Cloudflare account (for deployment)
 
-```env
-OPENAI_API_KEY=your_openai_api_key
+### Local Development
+
+1. **Clone the repository**
+```bash
+   git clone https://github.com/YOUR_USERNAME/cf_ai_edgelint.git
+   cd cf_ai_edgelint
 ```
 
-4. Run locally:
-
+2. **Install dependencies**
 ```bash
-npm start
+   npm install
 ```
 
-5. Deploy:
-
+3. **Start development server**
 ```bash
+   npm run start
+```
+
+4. **Open in browser**
+```
+   http://localhost:5173
+```
+
+That's it! No API keys needed - uses Workers AI locally.
+
+## 🌐 Deployment
+
+Deploy to Cloudflare Workers:
+```bash
+# Login to Cloudflare
+npx wrangler login
+
+# Deploy
 npm run deploy
 ```
 
-## Project Structure
+Your EdgeLint AI will be live at: `https://cf-ai-edgelint.YOUR_SUBDOMAIN.workers.dev`
 
-```
-├── src/
-│   ├── app.tsx        # Chat UI implementation
-│   ├── server.ts      # Chat agent logic
-│   ├── tools.ts       # Tool definitions
-│   ├── utils.ts       # Helper functions
-│   └── styles.css     # UI styling
-```
+### Configuration
 
-## Customization Guide
-
-### Adding New Tools
-
-Add new tools in `tools.ts` using the tool builder:
-
-```ts
-// Example of a tool that requires confirmation
-const searchDatabase = tool({
-  description: "Search the database for user records",
-  parameters: z.object({
-    query: z.string(),
-    limit: z.number().optional()
-  })
-  // No execute function = requires confirmation
-});
-
-// Example of an auto-executing tool
-const getCurrentTime = tool({
-  description: "Get current server time",
-  parameters: z.object({}),
-  execute: async () => new Date().toISOString()
-});
-
-// Scheduling tool implementation
-const scheduleTask = tool({
-  description:
-    "schedule a task to be executed at a later time. 'when' can be a date, a delay in seconds, or a cron pattern.",
-  parameters: z.object({
-    type: z.enum(["scheduled", "delayed", "cron"]),
-    when: z.union([z.number(), z.string()]),
-    payload: z.string()
-  }),
-  execute: async ({ type, when, payload }) => {
-    // ... see the implementation in tools.ts
-  }
-});
-```
-
-To handle tool confirmations, add execution functions to the `executions` object:
-
-```typescript
-export const executions = {
-  searchDatabase: async ({
-    query,
-    limit
-  }: {
-    query: string;
-    limit?: number;
-  }) => {
-    // Implementation for when the tool is confirmed
-    const results = await db.search(query, limit);
-    return results;
-  }
-  // Add more execution handlers for other tools that require confirmation
-};
-```
-
-Tools can be configured in two ways:
-
-1. With an `execute` function for automatic execution
-2. Without an `execute` function, requiring confirmation and using the `executions` object to handle the confirmed action. NOTE: The keys in `executions` should match `toolsRequiringConfirmation` in `app.tsx`.
-
-### Use a different AI model provider
-
-The starting [`server.ts`](https://github.com/cloudflare/agents-starter/blob/main/src/server.ts) implementation uses the [`ai-sdk`](https://sdk.vercel.ai/docs/introduction) and the [OpenAI provider](https://sdk.vercel.ai/providers/ai-sdk-providers/openai), but you can use any AI model provider by:
-
-1. Installing an alternative AI provider for the `ai-sdk`, such as the [`workers-ai-provider`](https://sdk.vercel.ai/providers/community-providers/cloudflare-workers-ai) or [`anthropic`](https://sdk.vercel.ai/providers/ai-sdk-providers/anthropic) provider:
-2. Replacing the AI SDK with the [OpenAI SDK](https://github.com/openai/openai-node)
-3. Using the Cloudflare [Workers AI + AI Gateway](https://developers.cloudflare.com/ai-gateway/providers/workersai/#workers-binding) binding API directly
-
-For example, to use the [`workers-ai-provider`](https://sdk.vercel.ai/providers/community-providers/cloudflare-workers-ai), install the package:
-
-```sh
-npm install workers-ai-provider
-```
-
-Add an `ai` binding to `wrangler.jsonc`:
-
+The project is configured via `wrangler.jsonc`:
 ```jsonc
-// rest of file
+{
+  "name": "cf-ai-edgelint",
+  "main": "src/server.ts",
+  "compatibility_date": "2025-08-03",
   "ai": {
-    "binding": "AI"
+    "binding": "AI",
+    "remote": true
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "Chat",
+        "class_name": "Chat"
+      }
+    ]
   }
-// rest of file
+}
 ```
 
-Replace the `@ai-sdk/openai` import and usage with the `workers-ai-provider`:
+## 🏗️ Architecture
 
-```diff
-// server.ts
-// Change the imports
-- import { openai } from "@ai-sdk/openai";
-+ import { createWorkersAI } from 'workers-ai-provider';
+### Technology Stack
 
-// Create a Workers AI instance
-+ const workersai = createWorkersAI({ binding: env.AI });
+- **Frontend**: React 19 + Vite + TailwindCSS
+- **Backend**: Cloudflare Workers + Agents SDK
+- **AI Model**: Llama 3.3 (70B) via Workers AI
+- **State Management**: Durable Objects + SQL
+- **Real-time**: WebSockets (built into Agents SDK)
 
-// Use it when calling the streamText method (or other methods)
-// from the ai-sdk
-- const model = openai("gpt-4o-2024-11-20");
-+ const model = workersai("@cf/deepseek-ai/deepseek-r1-distill-qwen-32b")
+### Key Components
+```
+src/
+├── server.ts           # Agent implementation (Chat class)
+├── tools.ts            # Code analysis tools
+├── app.tsx             # React UI
+├── components/         # UI components
+└── utils.ts           # Helper functions
 ```
 
-Commit your changes and then run the `agents-starter` as per the rest of this README.
+### How It Works
 
-### Modifying the UI
+1. **User submits code** → React UI sends message to Agent
+2. **Agent analyzes** → Calls `analyzeWorkerCode` tool
+3. **Tool executes** → Pattern matching + rule-based analysis
+4. **AI enhances** → Llama 3.3 formats and explains results
+5. **User receives** → Formatted analysis with fixes
 
-The chat interface is built with React and can be customized in `app.tsx`:
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed technical documentation.
 
-- Modify the theme colors in `styles.css`
-- Add new UI components in the chat container
-- Customize message rendering and tool confirmation dialogs
-- Add new controls to the header
+## 🛠️ Code Analysis Rules
 
-### Example Use Cases
+EdgeLint detects:
 
-1. **Customer Support Agent**
-   - Add tools for:
-     - Ticket creation/lookup
-     - Order status checking
-     - Product recommendations
-     - FAQ database search
+### 🔴 Critical Issues (Won't Run)
+- Node.js modules (fs, path, crypto, http, etc.)
+- Synchronous file operations (readFileSync, writeFileSync)
+- Missing default export
+- Missing fetch handler
 
-2. **Development Assistant**
-   - Integrate tools for:
-     - Code linting
-     - Git operations
-     - Documentation search
-     - Dependency checking
+### 🟡 Warnings (May Cause Problems)
+- setTimeout/setInterval usage
+- Global state (module-level variables)
+- Missing error handling
+- Missing env parameter
 
-3. **Data Analysis Assistant**
-   - Build tools for:
-     - Database querying
-     - Data visualization
-     - Statistical analysis
-     - Report generation
+### ℹ️ Suggestions (Best Practices)
+- Missing ctx.waitUntil for background tasks
+- Inefficient Response handling
+- Missing caching strategies
 
-4. **Personal Productivity Assistant**
-   - Implement tools for:
-     - Task scheduling with flexible timing options
-     - One-time, delayed, and recurring task management
-     - Task tracking with reminders
-     - Email drafting
-     - Note taking
+## 🧪 Testing
 
-5. **Scheduling Assistant**
-   - Build tools for:
-     - One-time event scheduling using specific dates
-     - Delayed task execution (e.g., "remind me in 30 minutes")
-     - Recurring tasks using cron patterns
-     - Task payload management
-     - Flexible scheduling patterns
+Try these example queries:
 
-Each use case can be implemented by:
+1. **Code Review**
+```
+   Can you review this code?
+   [paste problematic Worker code]
+```
 
-1. Adding relevant tools in `tools.ts`
-2. Customizing the UI for specific interactions
-3. Extending the agent's capabilities in `server.ts`
-4. Adding any necessary external API integrations
+2. **Concept Questions**
+```
+   Why can't I use fs.readFile in Workers?
+   What's the difference between KV and R2?
+   Explain V8 isolates
+```
 
-## Learn More
+3. **Optimization Help**
+```
+   How do I optimize this Worker for performance?
+   What's the best way to cache API responses?
+```
 
-- [`agents`](https://github.com/cloudflare/agents/blob/main/packages/agents/README.md)
-- [Cloudflare Agents Documentation](https://developers.cloudflare.com/agents/)
+## 📚 Learn More
+
 - [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+- [Agents SDK Guide](https://developers.cloudflare.com/agents/)
+- [Workers AI](https://developers.cloudflare.com/workers-ai/)
+- [Edge Computing Best Practices](https://developers.cloudflare.com/workers/platform/limits/)
 
-## License
+## 🎯 Project Goals
 
-MIT
+EdgeLint AI was built to demonstrate:
+
+1. **Deep platform knowledge** - Understanding of Workers constraints and edge computing
+2. **AI integration expertise** - Effective use of Workers AI and Agents SDK
+3. **Production-quality code** - Clean architecture, error handling, testing
+4. **Developer experience focus** - Intuitive UI, helpful feedback, educational approach
+
+## 🤝 Contributing
+
+This is a portfolio/assignment project, but feedback is welcome!
+
+## 📄 License
+
+MIT License - see [LICENSE](./LICENSE) file
+
+## 👤 Author
+
+**Your Name**
+- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
+- Email: your.email@example.com
+
+---
+
+Built with ❤️ using Cloudflare Workers, Agents SDK, and Workers AI
+
+*Submission for Cloudflare Software Engineer Intern position (Summer 2026)*
