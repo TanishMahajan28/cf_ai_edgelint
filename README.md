@@ -118,7 +118,7 @@ npx wrangler login
 npm run deploy
 ```
 
-Your EdgeLint AI will be live at: `https://cf-ai-edgelint.YOUR_SUBDOMAIN.workers.dev`
+Your EdgeLint AI will be live at: `https://cf-ai-edgelint.tanish-mahajan.workers.dev`
 
 ### Configuration
 
@@ -244,8 +244,8 @@ MIT License - see [LICENSE](./LICENSE) file
 ## 👤 Author
 
 **Your Name**
-- GitHub: [@YOUR_USERNAME](https://github.com/YOUR_USERNAME)
-- Email: your.email@example.com
+- GitHub: [@TanishMahajan28](https://github.com/TanishMahajan28)
+- Emai: mahajantanish28@gmail.com
 
 ---
 
