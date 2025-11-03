@@ -108,11 +108,93 @@ const cancelScheduledTask = tool({
   }
 });
 
+
+/**
+ * EdgeLint: Analyze code for Cloudflare Workers issues
+ */
+const analyzeWorkerCode = tool({
+  description: "Analyze code for Cloudflare Workers compatibility issues, performance problems, and best practices. Use this when users share code to review.",
+  inputSchema: z.object({
+    code: z.string().describe("The code to analyze"),
+    filename: z.string().optional().describe("Optional filename for context")
+  }),
+  execute: async ({ code, filename }) => {
+    console.log(`Analyzing code${filename ? ` from ${filename}` : ''}...`);
+    
+    const issues: string[] = [];
+    
+    // Check for Node.js APIs
+    const nodeAPIs = [
+      'fs', 'path', 'crypto', 'os', 'process', 'child_process',
+      'cluster', 'dns', 'http', 'https', 'net', 'tls', 'stream'
+    ];
+    
+    nodeAPIs.forEach(api => {
+      if (code.includes(`from '${api}'`) || code.includes(`require('${api}')`)) {
+        issues.push(`❌ CRITICAL: Node.js '${api}' module detected - Not available in Workers`);
+      }
+    });
+    
+    // Check for blocking operations
+    if (code.includes('.readFileSync') || code.includes('.writeFileSync')) {
+      issues.push(`❌ CRITICAL: Synchronous file operations detected - Use async operations or KV/R2`);
+    }
+    
+    // Check for setTimeout/setInterval
+    if (code.includes('setTimeout') || code.includes('setInterval')) {
+      issues.push(`⚠️ WARNING: setTimeout/setInterval detected - Consider Durable Objects Alarms or Cron Triggers`);
+    }
+    
+    // Check for missing error handling
+    if (code.includes('async') && !code.includes('try') && !code.includes('catch')) {
+      issues.push(`⚠️ WARNING: Async operations without try-catch - Add error handling`);
+    }
+    
+    // Check for proper Workers export
+    if (!code.includes('export default')) {
+      issues.push(`ℹ️ INFO: Missing 'export default' - Workers need a default export`);
+    }
+    
+    // Check for fetch handler
+    if (!code.includes('fetch(')) {
+      issues.push(`ℹ️ INFO: No fetch handler detected - Workers need a fetch handler`);
+    }
+    
+    if (issues.length === 0) {
+      return `✅ Code looks good! No major issues detected.\n\nThis code appears to be Workers-compatible. Great job!`;
+    }
+    
+    return `Found ${issues.length} issue(s):\n\n${issues.join('\n\n')}`;
+  }
+});
+
+/**
+ * Explain a specific Workers concept
+ */
+const explainWorkersConcept = tool({
+  description: "Explain Cloudflare Workers concepts, constraints, or best practices",
+  inputSchema: z.object({
+    concept: z.string().describe("The concept to explain (e.g., 'CPU time limits', 'V8 isolates', 'KV vs R2')")
+  }),
+  execute: async ({ concept }) => {
+    console.log(`Explaining concept: ${concept}`);
+    
+    // This is a simple implementation - the AI will handle the actual explanation
+    return `Requesting explanation for: ${concept}`;
+  }
+});
+
+
 /**
  * Export all available tools
  * These will be provided to the AI model to describe available capabilities
  */
 export const tools = {
+  //EdgeLint tools (new ones)
+  analyzeWorkerCode,
+  explainWorkersConcept,
+
+  // Original demo tools
   getWeatherInformation,
   getLocalTime,
   scheduleTask,
