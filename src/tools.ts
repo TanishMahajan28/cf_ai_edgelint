@@ -237,53 +237,60 @@ const analyzeWorkerCode = tool({
 
   This code appears to be Workers-compatible and follows edge computing best practices. Great job! 🎉
 
-  Some optional improvements you might consider:
-  - Add comprehensive error handling
-  - Implement caching strategies
-  - Add request validation
-  - Consider rate limiting`;
-    }
-    
-    // Format issues by severity
-    const critical = issues.filter(i => i.severity === 'CRITICAL');
-    const errors = issues.filter(i => i.severity === 'ERROR');
-    const warnings = issues.filter(i => i.severity === 'WARNING');
-    const info = issues.filter(i => i.severity === 'INFO');
-    
-    let result = `Found ${issues.length} issue(s) in your code:\n\n`;
-    
-    if (critical.length > 0) {
-      result += `🔴 CRITICAL ISSUES (${critical.length}):\n`;
-      critical.forEach((issue, i) => {
-        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
-      });
-      result += '\n';
-    }
-    
-    if (errors.length > 0) {
-      result += `🟠 ERRORS (${errors.length}):\n`;
-      errors.forEach((issue, i) => {
-        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
-      });
-      result += '\n';
-    }
-    
-    if (warnings.length > 0) {
-      result += `🟡 WARNINGS (${warnings.length}):\n`;
-      warnings.forEach((issue, i) => {
-        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
-      });
-      result += '\n';
-    }
-    
-    if (info.length > 0) {
-      result += `ℹ️ SUGGESTIONS (${info.length}):\n`;
-      info.forEach((issue, i) => {
-        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
-      });
-    }
-    
-    return result;
+**Optional improvements you might consider:**
+- Add comprehensive error handling
+- Implement caching strategies  
+- Add request validation
+- Consider rate limiting`;
+  }
+  
+  // Format issues by severity
+  const critical = issues.filter(i => i.severity === 'CRITICAL');
+  const errors = issues.filter(i => i.severity === 'ERROR');
+  const warnings = issues.filter(i => i.severity === 'WARNING');
+  const info = issues.filter(i => i.severity === 'INFO');
+  
+  let result = `## 📊 Analysis Results\n\nFound **${issues.length} issue(s)** in your code:\n\n`;
+  
+  if (critical.length > 0) {
+    result += `### 🔴 CRITICAL ISSUES (${critical.length})\n`;
+    result += `*These will prevent your Worker from running:*\n\n`;
+    critical.forEach((issue, i) => {
+      result += `**${i + 1}. ${issue.title}**\n`;
+      result += `   ${issue.description}\n\n`;
+    });
+  }
+  
+  if (errors.length > 0) {
+    result += `### 🟠 ERRORS (${errors.length})\n`;
+    result += `*These must be fixed before deployment:*\n\n`;
+    errors.forEach((issue, i) => {
+      result += `**${i + 1}. ${issue.title}**\n`;
+      result += `   ${issue.description}\n\n`;
+    });
+  }
+  
+  if (warnings.length > 0) {
+    result += `### 🟡 WARNINGS (${warnings.length})\n`;
+    result += `*These may cause problems in production:*\n\n`;
+    warnings.forEach((issue, i) => {
+      result += `**${i + 1}. ${issue.title}**\n`;
+      result += `   ${issue.description}\n\n`;
+    });
+  }
+  
+  if (info.length > 0) {
+    result += `### ℹ️ SUGGESTIONS (${info.length})\n`;
+    result += `*Optional improvements for better code:*\n\n`;
+    info.forEach((issue, i) => {
+      result += `**${i + 1}. ${issue.title}**\n`;
+      result += `   ${issue.description}\n\n`;
+    });
+  }
+  
+  result += `\n---\n\n💡 **Next:** I can provide a corrected version of this code. Would you like me to show you a Workers-compatible implementation?`;
+  
+  return result;
   }});
 
 
@@ -329,7 +336,7 @@ const explainWorkersConcept = tool({
 export const tools = {
   //EdgeLint tools (new ones)
   analyzeWorkerCode,
-  generateFixedCode,
+  // generateFixedCode,
   explainWorkersConcept,
 
   // Original demo tools
