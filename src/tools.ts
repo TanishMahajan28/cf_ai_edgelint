@@ -121,50 +121,187 @@ const analyzeWorkerCode = tool({
   execute: async ({ code, filename }) => {
     console.log(`Analyzing code${filename ? ` from ${filename}` : ''}...`);
     
-    const issues: string[] = [];
+    const issues: Array<{ severity: string; title: string; description: string; line?: number }> = [];
     
     // Check for Node.js APIs
     const nodeAPIs = [
       'fs', 'path', 'crypto', 'os', 'process', 'child_process',
-      'cluster', 'dns', 'http', 'https', 'net', 'tls', 'stream'
+      'cluster', 'dns', 'http', 'https', 'net', 'tls', 'stream',
+      'buffer', 'events', 'util', 'url', 'querystring', 'zlib'
     ];
     
     nodeAPIs.forEach(api => {
-      if (code.includes(`from '${api}'`) || code.includes(`require('${api}')`)) {
-        issues.push(`❌ CRITICAL: Node.js '${api}' module detected - Not available in Workers`);
+      if (code.includes(`from '${api}'`) || code.includes(`from "${api}"`) || 
+          code.includes(`require('${api}')`) || code.includes(`require("${api}")`)) {
+        issues.push({
+          severity: 'CRITICAL',
+          title: `Node.js '${api}' module not available`,
+          description: `Workers run in V8 isolates without Node.js APIs. Replace '${api}' with Workers-compatible alternatives.`
+        });
       }
     });
     
     // Check for blocking operations
-    if (code.includes('.readFileSync') || code.includes('.writeFileSync')) {
-      issues.push(`❌ CRITICAL: Synchronous file operations detected - Use async operations or KV/R2`);
-    }
+    const blockingOps = [
+      { pattern: 'readFileSync', fix: 'Use KV.get() or R2 fetch with await' },
+      { pattern: 'writeFileSync', fix: 'Use KV.put() or R2 put with await' },
+      { pattern: 'execSync', fix: 'Not supported - rethink your architecture' },
+      { pattern: 'readSync', fix: 'Use async operations with await' }
+    ];
+    
+    blockingOps.forEach(({ pattern, fix }) => {
+      if (code.includes(pattern)) {
+        issues.push({
+          severity: 'CRITICAL',
+          title: `Synchronous operation: ${pattern}()`,
+          description: `Blocking operations hurt edge performance. ${fix}`
+        });
+      }
+    });
     
     // Check for setTimeout/setInterval
     if (code.includes('setTimeout') || code.includes('setInterval')) {
-      issues.push(`⚠️ WARNING: setTimeout/setInterval detected - Consider Durable Objects Alarms or Cron Triggers`);
+      issues.push({
+        severity: 'WARNING',
+        title: 'Timers not supported in Workers',
+        description: 'setTimeout/setInterval won\'t work. Use Durable Objects Alarms for scheduled tasks, or Workflows for delayed execution.'
+      });
+    }
+    
+    // Check for global state
+    if (code.match(/^(let|var|const)\s+\w+\s*=/m) && code.includes('export default')) {
+      issues.push({
+        severity: 'WARNING',
+        title: 'Potential global state detected',
+        description: 'Workers are stateless. Global variables reset between requests. Use Durable Objects or KV for persistence.'
+      });
     }
     
     // Check for missing error handling
-    if (code.includes('async') && !code.includes('try') && !code.includes('catch')) {
-      issues.push(`⚠️ WARNING: Async operations without try-catch - Add error handling`);
+    const asyncFunctions = code.match(/async\s+\w+/g);
+    if (asyncFunctions && !code.includes('try') && !code.includes('catch')) {
+      issues.push({
+        severity: 'WARNING',
+        title: 'Missing error handling',
+        description: 'Async operations should be wrapped in try-catch blocks to handle failures gracefully.'
+      });
     }
     
     // Check for proper Workers export
     if (!code.includes('export default')) {
-      issues.push(`ℹ️ INFO: Missing 'export default' - Workers need a default export`);
+      issues.push({
+        severity: 'ERROR',
+        title: 'Missing default export',
+        description: 'Workers require a default export with a fetch handler: export default { async fetch(request, env, ctx) {...} }'
+      });
     }
     
     // Check for fetch handler
-    if (!code.includes('fetch(')) {
-      issues.push(`ℹ️ INFO: No fetch handler detected - Workers need a fetch handler`);
+    if (!code.includes('fetch(') && !code.includes('fetch (')) {
+      issues.push({
+        severity: 'ERROR',
+        title: 'No fetch handler found',
+        description: 'Workers need a fetch() method to handle HTTP requests.'
+      });
+    }
+    
+    // Check for env parameter usage
+    if (code.includes('fetch(request)') && !code.includes('fetch(request, env')) {
+      issues.push({
+        severity: 'INFO',
+        title: 'Missing env parameter',
+        description: 'Add env parameter to access bindings (KV, R2, D1, etc.): fetch(request, env, ctx)'
+      });
+    }
+    
+    // Check for Response usage
+    if (code.includes('return ') && !code.includes('Response')) {
+      issues.push({
+        severity: 'INFO',
+        title: 'Consider using Response objects',
+        description: 'Return proper Response objects with status codes and headers for better HTTP handling.'
+      });
+    }
+    
+    // Check for waitUntil usage for background tasks
+    if ((code.includes('await') || code.includes('fetch(')) && !code.includes('waitUntil')) {
+      issues.push({
+        severity: 'INFO',
+        title: 'Consider using ctx.waitUntil()',
+        description: 'For background tasks that can complete after responding, use ctx.waitUntil() to keep the Worker alive.'
+      });
     }
     
     if (issues.length === 0) {
-      return `✅ Code looks good! No major issues detected.\n\nThis code appears to be Workers-compatible. Great job!`;
+      return `✅ Excellent! No major issues detected.
+
+  This code appears to be Workers-compatible and follows edge computing best practices. Great job! 🎉
+
+  Some optional improvements you might consider:
+  - Add comprehensive error handling
+  - Implement caching strategies
+  - Add request validation
+  - Consider rate limiting`;
     }
     
-    return `Found ${issues.length} issue(s):\n\n${issues.join('\n\n')}`;
+    // Format issues by severity
+    const critical = issues.filter(i => i.severity === 'CRITICAL');
+    const errors = issues.filter(i => i.severity === 'ERROR');
+    const warnings = issues.filter(i => i.severity === 'WARNING');
+    const info = issues.filter(i => i.severity === 'INFO');
+    
+    let result = `Found ${issues.length} issue(s) in your code:\n\n`;
+    
+    if (critical.length > 0) {
+      result += `🔴 CRITICAL ISSUES (${critical.length}):\n`;
+      critical.forEach((issue, i) => {
+        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
+      });
+      result += '\n';
+    }
+    
+    if (errors.length > 0) {
+      result += `🟠 ERRORS (${errors.length}):\n`;
+      errors.forEach((issue, i) => {
+        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
+      });
+      result += '\n';
+    }
+    
+    if (warnings.length > 0) {
+      result += `🟡 WARNINGS (${warnings.length}):\n`;
+      warnings.forEach((issue, i) => {
+        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
+      });
+      result += '\n';
+    }
+    
+    if (info.length > 0) {
+      result += `ℹ️ SUGGESTIONS (${info.length}):\n`;
+      info.forEach((issue, i) => {
+        result += `\n${i + 1}. ${issue.title}\n   ${issue.description}\n`;
+      });
+    }
+    
+    return result;
+  }});
+
+
+/**
+ * Generate a fixed version of problematic code
+ */
+const generateFixedCode = tool({
+  description: "Generate a corrected, Workers-compatible version of code with issues",
+  inputSchema: z.object({
+    originalCode: z.string().describe("The original code with issues"),
+    issues: z.string().describe("Description of the issues found")
+  }),
+  execute: async ({ originalCode, issues }) => {
+    console.log("Generating fixed code...");
+    
+    // The AI will handle the actual code generation
+    // This tool just signals that we want a fix
+    return `Please provide a corrected version of the code that addresses these issues: ${issues}`;
   }
 });
 
@@ -192,6 +329,7 @@ const explainWorkersConcept = tool({
 export const tools = {
   //EdgeLint tools (new ones)
   analyzeWorkerCode,
+  generateFixedCode,
   explainWorkersConcept,
 
   // Original demo tools
