@@ -145,7 +145,7 @@ export default function Chat() {
               className="text-[#F48120]"
               data-icon="agents"
             >
-              <title>Cloudflare Agents</title>
+              <title>EdgeLint AI - Code Review for Cloudflare Workers</title>
               <symbol id="ai:local:agents" viewBox="0 0 80 79">
                 <path
                   fill="currentColor"
@@ -158,6 +158,7 @@ export default function Chat() {
 
           <div className="flex-1">
             <h2 className="font-semibold text-base">EdgeLint AI</h2>
+            <p className="text-xs text-muted-foreground">Code Review for Cloudflare Workers</p>
           </div>
 
           <div className="flex items-center gap-2 mr-2">
@@ -201,22 +202,61 @@ export default function Chat() {
                   </div>
                   <h3 className="font-semibold text-lg">Welcome to EdgeLint AI</h3>
                   <p className="text-muted-foreground text-sm">
-                    Your intelligent code review assistant for Cloudflare Workers
+                    Your intelligent code review assistant specialized in Cloudflare Workers. 
+                    I help you write edge-optimized, production-ready code.
                   </p>
-                  <ul className="text-sm text-left space-y-2">
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Paste Worker code for instant review</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Ask about edge computing concepts</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="text-[#F48120]">•</span>
-                      <span>Get optimization suggestions</span>
-                    </li>
-                  </ul>
+                  <div className="text-left space-y-3 pt-2">
+                    <p className="text-sm font-medium">Try these examples:</p>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => {
+                          setAgentInput(`Can you review this code?\n\nimport fs from 'fs';\n\nexport default {\n  async fetch(request) {\n    const data = fs.readFileSync('./data.json');\n    return new Response(data);\n  }\n}`);
+                        }}
+                        className="w-full text-left p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] hover:bg-[#F48120]/5 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#F48120] mt-0.5">🔍</span>
+                          <div className="text-sm">
+                            <div className="font-medium">Review problematic code</div>
+                            <div className="text-muted-foreground text-xs">See how EdgeLint catches Node.js issues</div>
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAgentInput("Why can't I use setTimeout in Cloudflare Workers?");
+                        }}
+                        className="w-full text-left p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] hover:bg-[#F48120]/5 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#F48120] mt-0.5">💡</span>
+                          <div className="text-sm">
+                            <div className="font-medium">Ask about edge concepts</div>
+                            <div className="text-muted-foreground text-xs">Learn about Workers constraints</div>
+                          </div>
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAgentInput("What's the difference between KV and R2?");
+                        }}
+                        className="w-full text-left p-3 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] hover:bg-[#F48120]/5 transition-colors"
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="text-[#F48120] mt-0.5">📚</span>
+                          <div className="text-sm">
+                            <div className="font-medium">Compare storage options</div>
+                            <div className="text-muted-foreground text-xs">Understand Cloudflare products</div>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-neutral-200 dark:border-neutral-700">
+                    <p className="text-xs text-muted-foreground">
+                      💪 Powered by Cloudflare Workers AI (Llama 3.3)
+                    </p>
+                  </div>
                 </div>
               </Card>
             </div>
@@ -346,6 +386,39 @@ export default function Chat() {
           <div ref={messagesEndRef} />
         </div>
 
+
+        {/* Quick Actions Bar */}
+        {agentMessages.length > 0 && (
+          <div className="px-3 py-2 bg-neutral-100 dark:bg-neutral-900 border-t border-neutral-300 dark:border-neutral-800">
+            <div className="flex gap-2 overflow-x-auto">
+              <button
+                onClick={() => setAgentInput("Explain V8 isolates")}
+                className="px-3 py-1.5 text-xs rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] whitespace-nowrap transition-colors"
+              >
+                💡 V8 Isolates
+              </button>
+              <button
+                onClick={() => setAgentInput("How do I use KV storage?")}
+                className="px-3 py-1.5 text-xs rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] whitespace-nowrap transition-colors"
+              >
+                🗄️ KV Setup
+              </button>
+              <button
+                onClick={() => setAgentInput("Best practices for error handling?")}
+                className="px-3 py-1.5 text-xs rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] whitespace-nowrap transition-colors"
+              >
+                ⚠️ Error Handling
+              </button>
+              <button
+                onClick={() => setAgentInput("How to optimize Worker performance?")}
+                className="px-3 py-1.5 text-xs rounded-full bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 hover:border-[#F48120] whitespace-nowrap transition-colors"
+              >
+                ⚡ Performance
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Input Area */}
         <form
           onSubmit={(e) => {
@@ -366,7 +439,7 @@ export default function Chat() {
                 placeholder={
                   pendingToolCallConfirmation
                     ? "Please respond to the tool confirmation above..."
-                    : "Send a message..."
+                    : "Paste your Worker code or ask a question..."
                 }
                 className="flex w-full border border-neutral-200 dark:border-neutral-700 px-3 py-2  ring-offset-background placeholder:text-neutral-500 dark:placeholder:text-neutral-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300 dark:focus-visible:ring-neutral-700 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none rounded-2xl !text-base pb-10 dark:bg-neutral-900"
                 value={agentInput}
