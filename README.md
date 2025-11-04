@@ -30,7 +30,7 @@ EdgeLint AI is an intelligent code review tool that helps developers write bette
 ## 🚀 Demo
 
 ### Live Demo
-👉 **[Try EdgeLint AI](https://your-deployment-url.workers.dev)** *(Add your deployed URL here)*
+👉 **[Try EdgeLint AI](https://cf-ai-edgelint.tanish-mahajan.workers.dev)**
 
 ### Example Usage
 
