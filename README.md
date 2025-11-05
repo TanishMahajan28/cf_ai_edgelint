@@ -243,7 +243,7 @@ MIT License - see [LICENSE](./LICENSE) file
 
 ## 👤 Author
 
-**Your Name**
+**Tanish Mahajan**
 - GitHub: [@TanishMahajan28](https://github.com/TanishMahajan28)
 - Emai: mahajantanish28@gmail.com
 
